@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rating App</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            text-align: center; 
+            background: #f4f4f4; 
+        }
+        .page { 
+            display: none; 
+            padding: 20px; 
+        }
+        nav { 
+            position: fixed; 
+            bottom: 0; 
+            width: 100%; 
+            background: #6200ea; 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 15px 0; 
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+        }
+        nav button { 
+            padding: 12px 15px; 
+            cursor: pointer; 
+            border: none; 
+            background: none; 
+            color: white; 
+            font-size: 18px;
+            font-weight: bold;
+        }
+        textarea, input { 
+            width: 90%; 
+            margin: 10px 0; 
+            padding: 12px; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            font-size: 16px;
+        }
+        .rating { 
+            display: flex; 
+            justify-content: center; 
+            gap: 10px; 
+            margin-top: 15px; 
+            flex-wrap: wrap;
+        }
+        .rating button { 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+            font-size: 16px; 
+            padding: 12px; 
+            border-radius: 8px; 
+            transition: background 0.3s; 
+            border: 1px solid #6200ea;
+            color: #6200ea;
+        }
+        .rating button.active { 
+            background: gold; 
+            color: white; 
+        }
+        .history-entry { 
+            background: white; 
+            margin: 8px auto; 
+            padding: 12px; 
+            border-radius: 8px; 
+            width: 90%; 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .history-entry a { 
+            text-decoration: none; 
+            color: #6200ea; 
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button { 
+            background: #6200ea; 
+            color: white; 
+            border: 2px solid white; 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            font-size: 16px;
+        }
+        button:hover { 
+            background: #3700b3; 
+        }
+        #history-popup { 
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
+            width: 80%; 
+            max-width: 400px;
+            text-align: left;
+        }
+        #history-popup button { 
+            display: block;
+            margin: 15px auto 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="rating" class="page">
+            <h2>Rate Someone</h2>
+            <textarea id="description" placeholder="Description"></textarea>
+            <div class="input-group">
+                <input type="time" id="time">
+                <input type="date" id="date">
+            </div>
+            <div class="rating">
+                <button onclick="setRating(1)">⭐ Good</button>
+                <button onclick="setRating(2)">⭐ Beautiful</button>
+                <button onclick="setRating(3)">⭐ Cute</button>
+                <button onclick="setRating(4)">⭐ Gorgeous</button>
+                <button onclick="setRating(5)">⭐ Attractive</button>
+            </div>
+            <button onclick="saveRating()">Save</button>
+        </div>
+        
+        <div id="history" class="page hidden">
+            <h2>History</h2>
+            <input type="date" id="filter-date" onchange="filterHistory()">
+            <ul id="history-list"></ul>
+        </div>
+        
+        <div id="history-popup">
+            <h3>Rating Details</h3>
+            <p id="popup-content"></p>
+            <button onclick="closePopup()">Close</button>
+        </div>
+        
+        <nav>
+            <button onclick="showPage('history')">History</button>
+            <button onclick="showPage('rating')">Rating</button>
+        </nav>
+    </div>
+
+    <script>
+        let ratings = JSON.parse(localStorage.getItem('ratings')) || [];
+        let selectedRating = 0;
+
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById(page).style.display = 'block';
+            if (page === 'history') loadHistory();
+        }
+        
+        function setRating(value) {
+            selectedRating = value;
+            document.querySelectorAll('.rating button').forEach((btn, index) => {
+                btn.classList.toggle('active', index < value);
+            });
+        }
+        
+        function saveRating() {
+            const description = document.getElementById('description').value;
+            const time = document.getElementById('time').value;
+            const date = document.getElementById('date').value;
+            
+            if (!description || !time || !date || selectedRating === 0) {
+                alert('Please complete all fields.');
+                return;
+            }
+            
+            const ratingEntry = { description, time, date, rating: selectedRating };
+            ratings.push(ratingEntry);
+            localStorage.setItem('ratings', JSON.stringify(ratings));
+            alert('Rating saved!');
+        }
+        
+        function loadHistory() {
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+            ratings.forEach((r, index) => {
+                const li = document.createElement('li');
+                li.classList.add('history-entry');
+                li.innerHTML = `${r.time} - ${['Good', 'Beautiful', 'Cute', 'Gorgeous', 'Attractive'][r.rating - 1]}`;
+                li.onclick = () => viewDetails(index);
+                historyList.appendChild(li);
+            });
+        }
+        
+        function viewDetails(index) {
+            const r = ratings[index];
+            document.getElementById('popup-content').innerHTML = `<p><strong>Time:</strong> ${r.time}</p><p><strong>Date:</strong> ${r.date}</p><p><strong>Description:</strong> ${r.description}</p>`;
+            document.getElementById('history-popup').style.display = 'block';
+        }
+        
+        function closePopup() {
+            document.getElementById('history-popup').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
